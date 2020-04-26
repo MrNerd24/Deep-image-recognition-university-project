@@ -3,3 +3,4 @@ images/
 annotations/
 env/
 venv/
+.ipynb_checkpoints/
