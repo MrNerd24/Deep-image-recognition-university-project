@@ -2,11 +2,11 @@ import time
 import copy
 import torch
 
-def train_model(model, dataloaders, criterion, optimizer, device, scheduler=None, num_epochs=25):
+def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, device, predictionCutoffs, scheduler=None, num_epochs=25):
     since = time.time()
-
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
+    predictionCutoffs = predictionCutoffs.to(device)
 
     for epoch in range(num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
@@ -34,7 +34,8 @@ def train_model(model, dataloaders, criterion, optimizer, device, scheduler=None
                 # track history if only in train
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
-                    _, preds = torch.max(outputs, 1)
+                    preds = outputs >= predictionCutoffs
+                    preds = preds.float()
                     loss = criterion(outputs, labels)
 
                     # backward + optimize only if in training phase
@@ -43,13 +44,13 @@ def train_model(model, dataloaders, criterion, optimizer, device, scheduler=None
                         optimizer.step()
 
                 # statistics
-                running_loss += loss.item() * inputs.size(0)
+                running_loss += loss.item()
                 running_corrects += torch.sum(preds == labels.data)
             if phase == 'train' and scheduler:
                 scheduler.step()
 
-            epoch_loss = running_loss / dataset_sizes[phase]
-            epoch_acc = running_corrects.double() / dataset_sizes[phase]
+            epoch_loss = running_loss / (dataset_sizes[phase]*len(predictionCutoffs))
+            epoch_acc = running_corrects.double() / (dataset_sizes[phase]*len(predictionCutoffs))
 
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                 phase, epoch_loss, epoch_acc))
