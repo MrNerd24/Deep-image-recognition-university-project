@@ -1,15 +1,46 @@
 import time
 import copy
 import torch
+import math
 
-def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, device, predictionCutoffs, scheduler=None, num_epochs=25):
+def multilabelCrossEntropyLoss(output, target):
+    loss = -torch.sum(target*torch.log(output) + (1-target)*torch.log(1-output))
+    return loss
+
+def collate(batch):
+        return {
+            "input": torch.stack([item["imageTensor"] for item in batch]),
+            "labels": torch.stack([item["labelsTensor"] for item in batch])
+        }
+
+
+def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numberOfLabels = 14, criterion = multilabelCrossEntropyLoss, optimizer=None, predictionCutoffs=None, scheduler=None):
     since = time.time()
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
+
+    if optimizer == None:
+        optimizer = torch.optim.Adam(model.fc.parameters(), lr=0.001)
+
+
+    if predictionCutoffs == None:
+        predictionCutoffs = torch.tensor([0.5]*numberOfLabels)
     predictionCutoffs = predictionCutoffs.to(device)
 
-    for epoch in range(num_epochs):
-        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+    datasets = {
+        "train": trainDataset,
+        "val": valDataset,
+    }
+
+    batchSize = 4
+
+    dataloaders = {
+        "train": torch.utils.data.DataLoader(trainDataset, batch_size=batchSize, shuffle=True, num_workers=4, collate_fn=collate),
+        "val": torch.utils.data.DataLoader(valDataset, batch_size=batchSize, shuffle=True, num_workers=4, collate_fn=collate)
+    }
+
+    for epoch in range(numberOfEpochs):
+        print('Epoch {}/{}'.format(epoch+1, numberOfEpochs))
         print('-' * 10)
 
         # Each epoch has a training and validation phase
@@ -22,10 +53,22 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, device,
             running_loss = 0.0
             running_corrects = 0
 
+            print("Training..." if phase == "train" else "Validating...")
+            print()
+
+            lastSeenProgressProcent = -10
+
             # Iterate over data.
-            for data in dataloaders[phase]:
-                inputs = data[0].to(device)
-                labels = data[1].to(device)
+            for index, data in enumerate(dataloaders[phase]):
+                inputs = data["input"].to(device)
+                labels = data["labels"].to(device)
+
+                progress = ((index+1)*batchSize)/(len(datasets[phase]))
+                progressProcent = math.floor(progress * 100)
+
+                if progressProcent >= lastSeenProgressProcent + 10 :
+                    print("Progress: {}%".format(progressProcent))
+                    lastSeenProgressProcent = progressProcent
 
                 # zero the parameter gradients
                 optimizer.zero_grad()
@@ -49,9 +92,10 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, device,
             if phase == 'train' and scheduler:
                 scheduler.step()
 
-            epoch_loss = running_loss / (dataset_sizes[phase]*len(predictionCutoffs))
-            epoch_acc = running_corrects.double() / (dataset_sizes[phase]*len(predictionCutoffs))
+            epoch_loss = running_loss / (len(datasets[phase])*len(predictionCutoffs))
+            epoch_acc = running_corrects.double() / (len(datasets[phase])*len(predictionCutoffs))
 
+            print()
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                 phase, epoch_loss, epoch_acc))
 
