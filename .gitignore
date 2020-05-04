@@ -1,4 +1,6 @@
 dl2018-image-proj*
+image-training-corpus+annotations/
+train/
 images/
 annotations/
 env/
