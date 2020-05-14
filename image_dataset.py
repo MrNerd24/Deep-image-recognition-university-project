@@ -10,7 +10,7 @@ class ImageDataset(Dataset):
 
     def __init__(self, usedImageIds=None, dataAugmentation=None):
         self.dataAugmentation = dataAugmentation
-        self.csvFileName = "image_id_and_labels.csv"
+        self.csvFileName = "file_to_labels_table.csv"
         self.image_id_and_labels = pd.read_csv(self.csvFileName, index_col=False)
         file_path = path.abspath("image_dataset.py")
         self.trainImagesDir = path.join(path.dirname(file_path), "train/images")
@@ -26,9 +26,9 @@ class ImageDataset(Dataset):
         labels = row[1:]
         stringLabels = [self.image_id_and_labels.columns[i+1] for i in range(len(labels)) if labels[i] == 1]
         tensorLabels = torch.tensor(labels)
-        imageId = row[0]
+        imageFileName = row[0]
 
-        imagePath = path.join(self.trainImagesDir, "im{}.jpg".format(str(imageId)))
+        imagePath = path.join(self.trainImagesDir, imageFileName)
         image = PIL.Image.open(imagePath)
         image = image.convert("RGB")
         image = image.resize((224,224))
