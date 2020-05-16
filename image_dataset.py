@@ -14,19 +14,18 @@ class ImageDataset(Dataset):
         self.image_id_and_labels = pd.read_csv(self.csvFileName, index_col=False)
         file_path = path.abspath("image_dataset.py")
         self.trainImagesDir = path.join(path.dirname(file_path), "train/images")
-        self.usedImageIds = usedImageIds if usedImageIds else range(1,len(self.image_id_and_labels)+1)
+        self.usedImageIds = usedImageIds if usedImageIds is not None else range(1,len(self.image_id_and_labels)+1)
 
     def __len__(self):
         return len(self.usedImageIds)
 
     def __getitem__(self, idx):
-        id = self.usedImageIds[idx]
-        row = self.image_id_and_labels.iloc[id-1].values
+        id = int(self.usedImageIds[idx])
+        labels = self.image_id_and_labels[self.image_id_and_labels.columns[1:]].iloc[id-1].values
 
-        labels = row[1:]
         stringLabels = [self.image_id_and_labels.columns[i+1] for i in range(len(labels)) if labels[i] == 1]
         tensorLabels = torch.tensor(labels)
-        imageFileName = row[0]
+        imageFileName = self.image_id_and_labels.iloc[id-1, 0]
 
         imagePath = path.join(self.trainImagesDir, imageFileName)
         image = PIL.Image.open(imagePath)
