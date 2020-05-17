@@ -4,7 +4,17 @@ import torch
 import math
 
 def multilabelCrossEntropyLoss(output, target):
+    output = 0.99*output + 0.005
     loss = -torch.sum(target*torch.log(output) + (1-target)*torch.log(1-output))
+
+    ## For debugging nan or inf loss:
+    #lossCpu = loss.cpu().item()
+    #if math.isnan(lossCpu) or math.isinf(lossCpu):
+    #    print("Output and target that caused a nan or inf loss")
+    #    print(lossCpu)
+    #    print(output)
+    #    print(target)
+
     return loss
 
 def collate(batch):
