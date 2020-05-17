@@ -4,6 +4,7 @@ import torch
 import math
 
 def multilabelCrossEntropyLoss(output, target):
+    output = 0.99*output + 0.005
     loss = -torch.sum(target*torch.log(output) + (1-target)*torch.log(1-output))
     return loss
 
