@@ -21,7 +21,7 @@ def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numbe
     best_acc = 0.0
 
     if optimizer == None:
-        optimizer = torch.optim.Adam(model.fc.parameters(), lr=0.001)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 
     if predictionCutoffs == None:
