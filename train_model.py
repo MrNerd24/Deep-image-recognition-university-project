@@ -15,18 +15,20 @@ def collate(batch):
         }
 
 
-def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numberOfLabels = 14, criterion = multilabelCrossEntropyLoss, optimizer=None, predictionCutoffs=None, scheduler=None):
+def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numberOfLabels=14, criterion=multilabelCrossEntropyLoss, optimizer=None, decisionThresholds=None, scheduler=None, selection_criteria="accuracy", return_logs=False):
+    # FIXME: implement selection_criteria: {'accuracy', 'loss'} -> select model by largest accuracy or smallest loss
     since = time.time()
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
+    training_logs = {"epoch": [], "accuracy": [], "loss": []}
 
     if optimizer == None:
         optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 
-    if predictionCutoffs == None:
-        predictionCutoffs = torch.tensor([0.5]*numberOfLabels)
-    predictionCutoffs = predictionCutoffs.to(device)
+    if not decisionThresholds:
+        decisionThresholds = torch.tensor([0.5]*numberOfLabels)
+    decisionThresholds = decisionThresholds.to(device)
 
     datasets = {
         "train": trainDataset,
@@ -78,7 +80,7 @@ def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numbe
                 # track history if only in train
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
-                    preds = outputs >= predictionCutoffs
+                    preds = outputs >= decisionThresholds
                     preds = preds.float()
                     loss = criterion(outputs, labels)
 
@@ -93,17 +95,22 @@ def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numbe
             if phase == 'train' and scheduler:
                 scheduler.step()
 
-            epoch_loss = running_loss / (len(datasets[phase])*len(predictionCutoffs))
-            epoch_acc = running_corrects.double() / (len(datasets[phase])*len(predictionCutoffs))
+            epoch_loss = running_loss / (len(datasets[phase])*len(decisionThresholds))
+            epoch_acc = running_corrects.double() / (len(datasets[phase])*len(decisionThresholds))
 
             print()
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                 phase, epoch_loss, epoch_acc))
-
-            # deep copy the model
-            if phase == 'val' and epoch_acc > best_acc:
-                best_acc = epoch_acc
-                best_model_wts = copy.deepcopy(model.state_dict())
+            
+            # save val set records for logs
+            if phase == 'val':
+                training_logs["epoch"].append(epoch)
+                training_logs["accuracy"].append(epoch_acc)
+                training_logs["loss"].append(epoch_loss)
+                # deep copy the model
+                if epoch_acc > best_acc:
+                    best_acc = epoch_acc
+                    best_model_wts = copy.deepcopy(model.state_dict())
 
         print()
 
@@ -114,4 +121,6 @@ def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numbe
 
     # load best model weights
     model.load_state_dict(best_model_wts)
+    if return_logs:
+        return model, training_logs
     return model
