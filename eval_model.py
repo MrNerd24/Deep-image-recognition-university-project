@@ -3,13 +3,13 @@ import train_model
 import torch
 
 
-def test_model(model, dataset, numberOfLabels=14, decisionThreshold=0.5):
+def test_model(model, dataset, device, numberOfLabels=14, decisionThreshold=0.5):
     model.eval()
     decisionThresholds = torch.tensor([decisionThreshold]*numberOfLabels)
     y_hats = []
     y_trues = []
     for data in dataset:
-        inputs = data["imageTensor"].cpu().unsqueeze(0)
+        inputs = data["imageTensor"].to(device).unsqueeze(0)
         labels = data["labelsTensor"]
         outputs = model(inputs).cpu()
         pred_labels = (outputs >= decisionThresholds).numpy()[0]
