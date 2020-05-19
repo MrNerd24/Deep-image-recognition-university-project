@@ -35,6 +35,9 @@ class ReseptionNet(torch.nn.Module):
         
         return output
 
+    def getNumberOfParameters(self):
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
     
 class Inception(torch.nn.Module):
     
@@ -70,7 +73,8 @@ class Inception(torch.nn.Module):
                     kernel_size = block["kernelSize"],
                     padding=block["padding"],
                     stride=block["stride"],
-                    dilation=block["dilation"]
+                    dilation=block["dilation"],
+                    groups=channels if block["grouping"] else 1
                 ))
                 channels = math.ceil(channels*block["outputChannelMultiplier"])
                 dimensions = self.updateDimensions(dimensions, block["padding"], block["dilation"], block["kernelSize"], block["stride"])
@@ -92,7 +96,8 @@ class Inception(torch.nn.Module):
             kernel_size = self.inceptionConfig["shortcut"]["kernelSize"],
             padding = self.inceptionConfig["shortcut"]["padding"],
             stride = self.inceptionConfig["shortcut"]["stride"],
-            dilation = self.inceptionConfig["shortcut"]["dilation"]
+            dilation = self.inceptionConfig["shortcut"]["dilation"],
+            groups=(inChannels if self.inceptionConfig["shortcut"]["grouping"] else 1)
         )
 
     def forward(self, x):
@@ -124,6 +129,7 @@ class Inception(torch.nn.Module):
         newHeight = (dimensions[0] + 2*padding[0] - dilation[0]*(kernelSize[0]-1)-1)//(stride[0])+1
         newWidth = (dimensions[1] + 2*padding[1] - dilation[1]*(kernelSize[1]-1)-1)//(stride[1])+1
         return (newHeight, newWidth)
+
 
 class Flatten(torch.nn.Module):
     

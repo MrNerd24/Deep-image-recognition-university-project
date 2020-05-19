@@ -17,23 +17,29 @@ class BasicConv2d(torch.nn.Module):
     
 class AveragePooling(torch.nn.Module):
     
-    def __init__(self, in_channels, out_channels, device, **kwarks):
+    def __init__(self, in_channels, out_channels, device, **kwargs):
         super(AveragePooling, self).__init__()
-        del kwarks["dilation"]
-        self.kwarks = kwarks
+        if in_channels != out_channels:
+            raise Exception("Pooling layers can only have output multiplier of 1.")
+        del kwargs["dilation"]
+        del kwargs["groups"]
+        self.kwargs = kwargs
         
     def forward(self, x):
-        return F.avg_pool2d(x, **self.kwarks)
+        return F.avg_pool2d(x, **self.kwargs)
     
 class MaxPooling(torch.nn.Module):
     
-    def __init__(self, in_channels, out_channels, device, **kwarks):
+    def __init__(self, in_channels, out_channels, device, **kwargs):
         super(MaxPooling, self).__init__()
-        del kwarks["dilation"]
-        self.kwarks = kwarks
+        if in_channels != out_channels:
+            raise Exception("Pooling layers can only have output multiplier of 1.")
+        del kwargs["dilation"]
+        del kwargs["groups"]
+        self.kwargs = kwargs
         
     def forward(self, x):
-        return F.max_pool2d(x, **self.kwarks)
+        return F.max_pool2d(x, **self.kwargs)
     
     
     
@@ -48,11 +54,11 @@ class IdentityConv2d(torch.nn.Module):
             else:
                 return (value, value)
         kernelSize = dimensionalize(kwargs["kernel_size"])
-        del kwargs["kernel_size"]
+        del self.kwargs["kernel_size"]
         self.weights = np.zeros(kernelSize)
         self.weights[kernelSize[0]//2, kernelSize[1]//2] = 1
         self.weights = torch.Tensor(self.weights).to(device)
-        self.weights = self.weights.view(1, 1, kernelSize[0], kernelSize[1]).repeat(out_channels, in_channels, 1, 1)
+        self.weights = self.weights.view(1, 1, kernelSize[0], kernelSize[1]).repeat(out_channels, in_channels//self.kwargs["groups"], 1, 1)
         
     def forward(self, x):
         return F.conv2d(x, self.weights, **self.kwargs)
