@@ -8,12 +8,12 @@ import numpy as np
 
 class ImageDataset(Dataset):
 
-    def __init__(self, usedImageIds=None, dataAugmentation=None):
+    def __init__(self, usedImageIds=None, dataAugmentation=None, trainImagesDir=None):
         self.dataAugmentation = dataAugmentation
         self.csvFileName = "file_to_labels_table.csv"
         self.image_id_and_labels = pd.read_csv(self.csvFileName, index_col=False)
         file_path = path.abspath("image_dataset.py")
-        self.trainImagesDir = path.join(path.dirname(file_path), "train/images")
+        self.trainImagesDir = trainImagesDir if trainImagesDir is not None else path.join(path.dirname(file_path), "train/images")
         self.usedImageIds = usedImageIds if usedImageIds is not None else range(1,len(self.image_id_and_labels)+1)
 
     def __len__(self):

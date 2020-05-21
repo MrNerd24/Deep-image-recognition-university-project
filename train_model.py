@@ -15,7 +15,7 @@ def collate(batch):
         }
 
 
-def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numberOfLabels=14, criterion=multilabelCrossEntropyLoss, optimizer=None, decisionThresholds=None, scheduler=None, selection_criteria="accuracy", return_logs=False):
+def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numberOfLabels=14, criterion=multilabelCrossEntropyLoss, optimizer=None, decisionThresholds=None, scheduler=None, selection_criteria="accuracy", return_logs=False, optimizerStep=None):
     # FIXME: implement selection_criteria: {'accuracy', 'loss'} -> select model by largest accuracy or smallest loss
     since = time.time()
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -23,7 +23,7 @@ def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numbe
     training_logs = {"epoch": [], "accuracy": [], "loss": []}
 
     if optimizer == None:
-        optimizer = torch.optim.Adam(model.fc.parameters(), lr=0.001)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 
     if not decisionThresholds:
@@ -69,8 +69,8 @@ def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numbe
                 progress = ((index+1)*batchSize)/(len(datasets[phase]))
                 progressProcent = math.floor(progress * 100)
 
-                if progressProcent >= lastSeenProgressProcent + 10 :
-                    print("Progress: {}%".format(progressProcent))
+                if progressProcent >= lastSeenProgressProcent + 1 :
+                    print("\rProgress: {}%".format(progressProcent), end="")
                     lastSeenProgressProcent = progressProcent
 
                 # zero the parameter gradients
@@ -87,7 +87,10 @@ def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numbe
                     # backward + optimize only if in training phase
                     if phase == 'train':
                         loss.backward()
-                        optimizer.step()
+                        if optimizerStep is None:
+                            optimizer.step()
+                        else:
+                            optimizerStep(optimizer)
 
                 # statistics
                 running_loss += loss.item()
@@ -98,6 +101,7 @@ def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numbe
             epoch_loss = running_loss / (len(datasets[phase])*len(decisionThresholds))
             epoch_acc = running_corrects.double() / (len(datasets[phase])*len(decisionThresholds))
 
+            print()
             print()
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                 phase, epoch_loss, epoch_acc))
