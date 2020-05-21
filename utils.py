@@ -2,6 +2,18 @@ import os
 from os.path import join, abspath, dirname
 import numpy as np
 import pandas as pd
+import pickle
+
+
+def save_pickle(dataset, path):
+    with open(path, 'wb') as f:
+        pickle.dump(dataset, f)
+
+
+def load_pickle(path):
+    with open(path, 'rb') as f:
+        data = pickle.load(f)
+    return data
 
 
 def build_imgfile_to_labels_csv(data_path="annotations/", is_abspath=False):
