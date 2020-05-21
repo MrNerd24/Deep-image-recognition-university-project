@@ -1,0 +1,26 @@
+epoch,accuracy,loss
+0,"tensor(0.9608, dtype=torch.float64)",0.11187264870178132
+1,"tensor(0.9568, dtype=torch.float64)",0.12092063512120928
+2,"tensor(0.9555, dtype=torch.float64)",0.12479997884943372
+3,"tensor(0.9586, dtype=torch.float64)",0.11867582049114364
+4,"tensor(0.9548, dtype=torch.float64)",0.1312808820633661
+5,"tensor(0.9565, dtype=torch.float64)",0.12814749597367786
+6,"tensor(0.9593, dtype=torch.float64)",0.11416355878966196
+7,"tensor(0.9577, dtype=torch.float64)",0.12285613990113849
+8,"tensor(0.9577, dtype=torch.float64)",0.1258738448364394
+9,"tensor(0.9587, dtype=torch.float64)",0.12323760071822575
+10,"tensor(0.9593, dtype=torch.float64)",0.1192885579835801
+11,"tensor(0.9592, dtype=torch.float64)",0.1196423153650193
+12,"tensor(0.9548, dtype=torch.float64)",0.1342492443237986
+13,"tensor(0.9545, dtype=torch.float64)",0.1378933724392028
+14,"tensor(0.9568, dtype=torch.float64)",0.12866741063765116
+15,"tensor(0.9551, dtype=torch.float64)",0.13435851976985022
+16,"tensor(0.9530, dtype=torch.float64)",0.1406486415153458
+17,"tensor(0.9496, dtype=torch.float64)",0.1551528720884096
+18,"tensor(0.9573, dtype=torch.float64)",0.128998916325115
+19,"tensor(0.9584, dtype=torch.float64)",0.125887632557324
+20,"tensor(0.9533, dtype=torch.float64)",0.13576806936661404
+21,"tensor(0.9531, dtype=torch.float64)",0.13901770022369567
+22,"tensor(0.9571, dtype=torch.float64)",0.12603066880646205
+23,"tensor(0.9593, dtype=torch.float64)",0.12590670816671282
+24,"tensor(0.9567, dtype=torch.float64)",0.12673405450866335
