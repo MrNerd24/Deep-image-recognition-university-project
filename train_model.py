@@ -121,8 +121,8 @@ def doEpoch(phase, model, dataloader, device, optimizer, criterion, decisionThre
         runningLoss += loss.item()
         runningTruePositives += torch.sum((preds == 1) & (labels.data == 1)).item()
         runningTrueNegatives += torch.sum((preds == 0) & (labels.data == 0)).item()
-        runningFalsePositives += torch.sum((preds == 0) & (labels.data == 1)).item()
-        runningFalseNegatives += torch.sum((preds == 1) & (labels.data == 0)).item()
+        runningFalsePositives += torch.sum((preds == 1) & (labels.data == 0)).item()
+        runningFalseNegatives += torch.sum((preds == 0) & (labels.data == 1)).item()
 
     if scheduler:
         scheduler.step()
