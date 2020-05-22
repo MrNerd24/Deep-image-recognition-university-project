@@ -1,7 +1,10 @@
 import os
 from os.path import join, abspath, dirname
+from operator import eq, lt
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import image_dataset
 import pickle
 
 
@@ -112,7 +115,7 @@ def get_train_val_indexes(df, split_prop, shuffle=False, stratified=False):
 
     return train, val
 
-def get_indexes_for_mislabelled_images(dataset, y_trues, y_hats, mislabels_count = 1, true_labels_count = 0, y_hat_labels_count = 0, return_sample = True, sample_size = 12):
+def get_indexes_for_mislabelled_images(dataset, y_trues, y_hats, mislabels_count = 1, true_labels_count = 0, y_hat_labels_count = 0, operators = [eq, eq], return_sample = True, sample_size = 12):
     """ Used for error analysis.
 
     Args:
@@ -128,7 +131,7 @@ def get_indexes_for_mislabelled_images(dataset, y_trues, y_hats, mislabels_count
         datum = dataset[idx]
         true_labels = datum["labelsString"]
         y_hat = np.array(y_hats[idx], dtype = 'bool')
-        if (len(true_labels) >= true_labels_count and np.count_nonzero(y_hat) >= y_hat_labels_count):
+        if (operators[0](len(true_labels), true_labels_count) and operators[1](np.count_nonzero(y_hat), y_hat_labels_count)):    
             new_idx.append(idx)
             
     if (return_sample and len(new_idx) > sample_size):
@@ -138,9 +141,8 @@ def get_indexes_for_mislabelled_images(dataset, y_trues, y_hats, mislabels_count
     else:
         return new_idx
 
-def plot_imgs_with_labels(dataset, sample, pltsize = 6, rows = 4, cols = 3):
+def plot_imgs_with_labels(dataset, y_hats, sample, pltsize = 6, rows = 4, cols = 3):
     """ Used for error analysis.
-
     Args:
       - 
     Kwargs:
@@ -152,12 +154,12 @@ def plot_imgs_with_labels(dataset, sample, pltsize = 6, rows = 4, cols = 3):
     cols = 3
     plt.figure(figsize=(3 * pltsize, 4 * pltsize))
     for i in range(len(sample)):
-        idx = sample[i]
-        datum = dataset[idx]
+        i_idx = sample[i]
+        datum = dataset[i_idx]
         plt.subplot(rows, cols, i + 1)
         plt.axis('off')
         plt.imshow(datum["imagePil"])
-        plt.title("{} : {}".format(datum["labelsString"], labelList[np.array(y_hats[idx], dtype = 'bool')]))
+        plt.title("{} : {}".format(datum["labelsString"], labelList[np.array(y_hats[i_idx], dtype = 'bool')]))
 
 def get_mislabels_count_for_each_label(y_hats, y_trues):
     """ Used for error analysis.
@@ -189,3 +191,16 @@ def get_mislabels_count_distribution(y_hats, y_trues):
         idx = np.argwhere(losses == i)
         mislabel_counts[i] = idx.shape[0]
     return np.array(mislabel_counts, dtype = 'int')
+
+def get_indexes_of_mislabeled_images_with_label(label_idx, y_trues, y_hats):
+    """ Used for error analysis.
+
+    Args:
+      - 
+    Kwargs:
+      - 
+    returns  """
+    labelList = np.array(pd.read_csv("file_to_labels_table.csv").columns[1:])
+    print(labelList[label_idx])
+    img_with_the_label_idxs = np.array(list(map(lambda x: int(x), np.argwhere(y_trues[:, label_idx] == 1))))
+    return img_with_the_label_idxs[np.array(list(map(lambda x: int(x), np.argwhere(y_hats[img_with_the_label_idxs, label_idx] == 0))))]
