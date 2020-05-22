@@ -20,8 +20,14 @@ class ReseptionNet(torch.nn.Module):
 
                 
         self.flatten = Flatten()
-        self.linear = torch.nn.Linear(channels*dimensions[0]*dimensions[1], config["outputs"])
-        self.sigmoid = torch.nn.Sigmoid()
+        hiddenLayerNeurons = [channels*dimensions[0]*dimensions[1]] + config["hiddenLayers"]["neurons"] + [config["outputs"]]
+        self.hiddenLayers = torch.nn.ModuleList([])
+        for i in range(1, len(hiddenLayerNeurons)-1):
+            self.hiddenLayers.append(torch.nn.Linear(hiddenLayerNeurons[i-1], hiddenLayerNeurons[i]))
+            self.hiddenLayers.append(torch.nn.ReLU())
+        lastI = len(hiddenLayerNeurons)-1
+        self.hiddenLayers.append(torch.nn.Linear(hiddenLayerNeurons[lastI-1], hiddenLayerNeurons[lastI]))
+        self.hiddenLayers.append(torch.nn.Sigmoid())
         self.to(device)
 
     def forward(self, x):
@@ -30,8 +36,8 @@ class ReseptionNet(torch.nn.Module):
             output = inception(output)
             
         output = self.flatten(output)
-        output = self.linear(output)
-        output = self.sigmoid(output)
+        for hiddenLayer in self.hiddenLayers:
+            output = hiddenLayer(output)
         
         return output
 
@@ -58,8 +64,8 @@ class Inception(torch.nn.Module):
                 self.inceptionConfig["shortcut"]["dilation"],
                 self.inceptionConfig["shortcut"]["kernelSize"],
                 self.inceptionConfig["shortcut"]["stride"]
-            )
-        ]
+            ) 
+        ] if self.inceptionConfig["shortcut"]["enabled"] else []
         for branch in self.inceptionConfig["branches"]:
             blocks = torch.nn.ModuleList([])
             channels = inChannels
@@ -98,7 +104,7 @@ class Inception(torch.nn.Module):
             stride = self.inceptionConfig["shortcut"]["stride"],
             dilation = self.inceptionConfig["shortcut"]["dilation"],
             groups=(inChannels if self.inceptionConfig["shortcut"]["grouping"] else 1)
-        )
+        ) if self.inceptionConfig["shortcut"]["enabled"] else None
 
     def forward(self, x):
         outputs = []
@@ -109,8 +115,9 @@ class Inception(torch.nn.Module):
             outputs.append(output)
         
         output = torch.cat(outputs, 1)
-        shortcut = self.shortcut(x)
-        output = output + shortcut
+        if self.shortcut is not None:
+            shortcut = self.shortcut(x)
+            output = output + shortcut
         output = F.relu(output)
 
         return output

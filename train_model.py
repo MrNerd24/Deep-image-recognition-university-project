@@ -56,6 +56,7 @@ def train_model(model, trainDataset, valDataset, device, numberOfEpochs=5, numbe
             running_loss = 0.0
             running_corrects = 0
 
+            print()
             print("Training..." if phase == "train" else "Validating...")
             print()
 
