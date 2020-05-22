@@ -1,0 +1,6 @@
+epoch,accuracy,loss
+0,"tensor(0.9579, dtype=torch.float64)",0.1101102386471771
+1,"tensor(0.9565, dtype=torch.float64)",0.11380755911554609
+2,"tensor(0.9581, dtype=torch.float64)",0.10892651088748659
+3,"tensor(0.9597, dtype=torch.float64)",0.10757335066511517
+4,"tensor(0.9601, dtype=torch.float64)",0.10641117515166601
