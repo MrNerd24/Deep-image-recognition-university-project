@@ -111,3 +111,81 @@ def get_train_val_indexes(df, split_prop, shuffle=False, stratified=False):
         train, val = index[:split_point], index[split_point:]
 
     return train, val
+
+def get_indexes_for_mislabelled_images(dataset, y_trues, y_hats, mislabels_count = 1, true_labels_count = 0, y_hat_labels_count = 0, return_sample = True, sample_size = 12):
+    """ Used for error analysis.
+
+    Args:
+      - 
+    Kwargs:
+      - 
+    returns  """
+    losses = np.sum((np.array(y_hats) - np.array(y_trues))**2, axis = 1)
+    mx_idx = np.argwhere(losses == mislabels_count)
+    new_idx = []
+    for idx in mx_idx:
+        idx = int(idx)
+        datum = dataset[idx]
+        true_labels = datum["labelsString"]
+        y_hat = np.array(y_hats[idx], dtype = 'bool')
+        if (len(true_labels) >= true_labels_count and np.count_nonzero(y_hat) >= y_hat_labels_count):
+            new_idx.append(idx)
+            
+    if (return_sample and len(new_idx) > sample_size):
+        sample = np.array(new_idx)
+        arr = np.random.choice(len(sample), size = sample_size, replace = False)
+        return(sample[arr])
+    else:
+        return new_idx
+
+def plot_imgs_with_labels(dataset, sample, pltsize = 6, rows = 4, cols = 3):
+    """ Used for error analysis.
+
+    Args:
+      - 
+    Kwargs:
+      - 
+    returns  """
+    labelList = np.array(pd.read_csv("file_to_labels_table.csv").columns[1:])
+    pltsize = 6
+    rows = 6
+    cols = 3
+    plt.figure(figsize=(3 * pltsize, 4 * pltsize))
+    for i in range(len(sample)):
+        idx = sample[i]
+        datum = dataset[idx]
+        plt.subplot(rows, cols, i + 1)
+        plt.axis('off')
+        plt.imshow(datum["imagePil"])
+        plt.title("{} : {}".format(datum["labelsString"], labelList[np.array(y_hats[idx], dtype = 'bool')]))
+
+def get_mislabels_count_for_each_label(y_hats, y_trues):
+    """ Used for error analysis.
+
+    Args:
+      - 
+    Kwargs:
+      - 
+    returns  """
+    labelList = np.array(pd.read_csv("file_to_labels_table.csv").columns[1:])
+    ll = (y_hats == y_trues)
+    mislabels = np.zeros(15, dtype = 'int')
+    for i in range(14):
+        idx = np.argwhere(ll[:,i] == False)
+        mislabels[i] = len(idx)
+    return(list(zip(labelList, mislabels)))
+
+def get_mislabels_count_distribution(y_hats, y_trues):
+    """ Used for error analysis.
+
+    Args:
+      - 
+    Kwargs:
+      - 
+    returns  """
+    losses = np.sum((np.array(y_hats) - np.array(y_trues))**2, axis = 1)
+    mislabel_counts = np.zeros(14)
+    for i in range(14):
+        idx = np.argwhere(losses == i)
+        mislabel_counts[i] = idx.shape[0]
+    return np.array(mislabel_counts, dtype = 'int')
