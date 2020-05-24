@@ -39,3 +39,6 @@ class ImageDataset(Dataset):
         imageTensor = transforms.functional.normalize(imageTensor, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
         return {"imageTensor": imageTensor, "imagePil": image, "labelsTensor": tensorLabels, "labelsString": stringLabels}
+    
+    def set_images_path(self, abs_path=None):
+        self.trainImagesDir = abs_path if abs_path is not None else path.join(path.dirname(path.abspath("image_dataset.py")), "train/images")
