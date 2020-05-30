@@ -8,24 +8,29 @@ import numpy as np
 
 class ImageDataset(Dataset):
 
-    def __init__(self, usedImageIds=None, dataAugmentation=None, trainImagesDir=None):
+    def __init__(self, usedImageIds=None, dataAugmentation=None, trainImagesDir=None, hasTrainLabels=True):
         self.dataAugmentation = dataAugmentation
         self.csvFileName = "file_to_labels_table.csv"
         self.image_id_and_labels = pd.read_csv(self.csvFileName, index_col=False)
         file_path = path.abspath("image_dataset.py")
         self.trainImagesDir = trainImagesDir if trainImagesDir is not None else path.join(path.dirname(file_path), "train/images")
         self.usedImageIds = usedImageIds if usedImageIds is not None else range(1,len(self.image_id_and_labels)+1)
+        self.hasTrainLabels = hasTrainLabels
 
     def __len__(self):
         return len(self.usedImageIds)
 
     def __getitem__(self, idx):
         id = int(self.usedImageIds[idx])
-        labels = self.image_id_and_labels[self.image_id_and_labels.columns[1:]].iloc[id-1].values
+        tensorLabels = None
+        stringLabels = None
+        if self.hasTrainLabels:
+            labels = self.image_id_and_labels[self.image_id_and_labels.columns[1:]].iloc[id-1].values
 
-        stringLabels = [self.image_id_and_labels.columns[i+1] for i in range(len(labels)) if labels[i] == 1]
-        tensorLabels = torch.tensor(labels)
-        imageFileName = self.image_id_and_labels.iloc[id-1, 0]
+            stringLabels = [self.image_id_and_labels.columns[i+1] for i in range(len(labels)) if labels[i] == 1]
+            tensorLabels = torch.tensor(labels)
+
+        imageFileName = "im{}.jpg".format(id)
 
         imagePath = path.join(self.trainImagesDir, imageFileName)
         image = PIL.Image.open(imagePath)
