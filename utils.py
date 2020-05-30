@@ -1,7 +1,10 @@
 import os
 from os.path import join, abspath, dirname
+from operator import eq, lt
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import image_dataset
 import pickle
 
 
@@ -111,3 +114,102 @@ def get_train_val_indexes(df, split_prop, shuffle=False, stratified=False):
         train, val = index[:split_point], index[split_point:]
 
     return train, val
+
+def get_indexes_for_mislabelled_images(dataset, y_trues, y_hats, mislabels_count = 1, true_labels_count = 0, y_hat_labels_count = 0, operators = [eq, eq], return_sample = True, sample_size = 12):
+    """ Used for error analysis. Returns a list of indexes for the images where the number of mislabelings
+        match the given parameters.
+
+    Args:
+      - dataset: the image dataset from where the indexes are searched from
+      - y_trues: matrix of true labels for the image dataset
+      - y_hats: matrix of labels given by a classifier algorithm
+    Kwargs:
+      - mislabels_count: number of mislabelings for each image
+      - true_labels_count: number of labels that the images actually have
+      - y_hat_labels_count: number of labels that the images have according to the classifier
+      - operators: a list of two functions that determine whether the number of labels should be exatly as high or at least as high
+      - return_sample: boolean for whether the function returns all the indexes that match the given parameter or just a random sample of them
+      - sample_size: the size of the sample of indexes
+    returns a list of indexes """
+    losses = np.sum((np.array(y_hats) - np.array(y_trues))**2, axis = 1)
+    mx_idx = np.argwhere(losses == mislabels_count)
+    new_idx = []
+    for idx in mx_idx:
+        idx = int(idx)
+        datum = dataset[idx]
+        true_labels = datum["labelsString"]
+        y_hat = np.array(y_hats[idx], dtype = 'bool')
+        if (operators[0](len(true_labels), true_labels_count) and operators[1](np.count_nonzero(y_hat), y_hat_labels_count)):    
+            new_idx.append(idx)
+            
+    if (return_sample and len(new_idx) > sample_size):
+        sample = np.array(new_idx)
+        arr = np.random.choice(len(sample), size = sample_size, replace = False)
+        return(sample[arr])
+    else:
+        return new_idx
+
+def plot_imgs_with_labels(dataset, y_hats, sample, pltsize = 6, rows = 4, cols = 3):
+    """ Used for error analysis. Plots the images from a given index set along with the true labels and predicted labels
+        of those images.
+    Args:
+      - dataset: the image dataset that has the images to be plotted
+      - y_hats: matrix of labels given by a classifier algorithm
+      - sample: the indexes of the images to be plotted
+    Kwargs:
+      - pltsize: the size of the plotted images
+      - rows: the number of rows for the plotted image
+      - cols: the number of columns for the plotted image
+    plots an image and Returns None """
+    labelList = np.array(pd.read_csv("file_to_labels_table.csv").columns[1:])
+    pltsize = 6
+    rows = 6
+    cols = 3
+    plt.figure(figsize=(3 * pltsize, 4 * pltsize))
+    for i in range(len(sample)):
+        i_idx = sample[i]
+        datum = dataset[i_idx]
+        plt.subplot(rows, cols, i + 1)
+        plt.axis('off')
+        plt.imshow(datum["imagePil"])
+        plt.title("{} : {}".format(datum["labelsString"], labelList[np.array(y_hats[i_idx], dtype = 'bool')]))
+
+def get_mislabels_count_for_each_label(y_hats, y_trues):
+    """ Used for error analysis. Returns a list of mislabeling counts for each label.
+    Args:
+      - y_hats: matrix of labels given by a classifier algorithm
+      - y_trues: matrix of true labels for the image dataset
+    returns a list of mislabeling counts for each label """
+    labelList = np.array(pd.read_csv("file_to_labels_table.csv").columns[1:])
+    ll = (y_hats == y_trues)
+    mislabels = np.zeros(15, dtype = 'int')
+    for i in range(14):
+        idx = np.argwhere(ll[:,i] == False)
+        mislabels[i] = len(idx)
+    return(list(zip(labelList, mislabels)))
+
+def get_mislabels_count_distribution(y_hats, y_trues):
+    """ Used for error analysis. Returns the distribution of mislabeling counts.
+    Args:
+      - y_hats: matrix of labels given by a classifier algorithm
+      - y_trues: matrix of true labels for the image dataset
+    returns the distribution of mislabeling counts """
+    losses = np.sum((np.array(y_hats) - np.array(y_trues))**2, axis = 1)
+    mislabel_counts = np.zeros(14)
+    for i in range(14):
+        idx = np.argwhere(losses == i)
+        mislabel_counts[i] = idx.shape[0]
+    return np.array(mislabel_counts, dtype = 'int')
+
+def get_indexes_of_mislabeled_images_with_label(label_idx, y_trues, y_hats):
+    """ Used for error analysis. Returns a list of indexes for images that had a specific label and were
+        mislabeled by a classification algorithm.
+    Args:
+      - label_idx: the index of the label that each image should have
+      - y_trues: matrix of true labels for the image dataset
+      - y_hats: matrix of labels given by a classifier algorithm
+    returns  img_with_the_label_idxs """
+    labelList = np.array(pd.read_csv("file_to_labels_table.csv").columns[1:])
+    print(labelList[label_idx])
+    img_with_the_label_idxs = np.array(list(map(lambda x: int(x), np.argwhere(y_trues[:, label_idx] == 1))))
+    return img_with_the_label_idxs[np.array(list(map(lambda x: int(x), np.argwhere(y_hats[img_with_the_label_idxs, label_idx] == 0))))]
