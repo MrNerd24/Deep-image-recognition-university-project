@@ -163,7 +163,7 @@ def calculateEpochStats(loss, truePositives, trueNegatives, falsePositives, fals
         "recall": recall,
         "f1": f1,
         "true positives": truePositives,
-        "true negative": trueNegatives,
+        "true negatives": trueNegatives,
         "false positives": falsePositives,
         "false negatives": falseNegatives,
     }
